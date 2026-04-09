@@ -4,15 +4,9 @@ metadata:
   name: hedoesit-ingress
   namespace: hedoesit
   annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - hedoesit.com
-      secretName: hedoesit-tls
+  ingressClassName: traefik
   rules:
     - host: hedoesit.com
       http:
