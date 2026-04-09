@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: hedoesit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: backend
+          image: ghcr.io/dekee/hedoesit-backend:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DB_HOST
+              value: postgres
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_DB
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: google-oauth-secret
+                  key: GOOGLE_CLIENT_ID
+            - name: INITIAL_ADMIN_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: google-oauth-secret
+                  key: INITIAL_ADMIN_EMAIL
+            - name: INITIAL_ADMIN_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: google-oauth-secret
+                  key: INITIAL_ADMIN_NAME
+            - name: GMAIL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mail-secret
+                  key: GMAIL_USERNAME
+            - name: GMAIL_APP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mail-secret
+                  key: GMAIL_APP_PASSWORD
+            - name: CONTACT_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: mail-secret
+                  key: CONTACT_EMAIL
+            - name: APP_BASE_URL
+              value: "https://hedoesit.com"
+            - name: UPLOAD_DIR
+              value: "/app/uploads"
+          volumeMounts:
+            - name: product-images
+              mountPath: /app/uploads
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: product-images
+          persistentVolumeClaim:
+            claimName: product-images-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: hedoesit
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8080
+      targetPort: 8080
